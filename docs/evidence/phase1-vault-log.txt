@@ -1,0 +1,4 @@
+{"event": "tokenize", "token": "tok_XieLBV76RUx8ip8nTu_kTpV3", "duplicate": false}
+{"event": "tokenize", "token": "tok_XieLBV76RUx8ip8nTu_kTpV3", "duplicate": true}
+{"event": "tokenize", "token": "tok_XieLBV76RUx8ip8nTu_kTpV3", "duplicate": true}
+{"event": "tokenize", "token": "tok_XieLBV76RUx8ip8nTu_kTpV3", "duplicate": true}

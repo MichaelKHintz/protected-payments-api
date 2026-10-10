@@ -1,0 +1,2 @@
+
+aws: [ERROR]: An error occurred (AccessDeniedException) when calling the GenerateDataKey operation: User: arn:aws:sts::<aws-account-id>:assumed-role/AWSReservedSSO_AdministratorAccess_3f848bc3e78c252b/<email> is not authorized to perform: kms:GenerateDataKey on resource: arn:aws:kms:us-east-1:<aws-account-id>:key/<uuid> because no resource-based policy allows the kms:GenerateDataKey action

@@ -1,0 +1,6 @@
+{
+    "KeyRotationEnabled": true,
+    "KeyId": "arn:aws:kms:us-east-1:<aws-account-id>:key/<uuid>",
+    "RotationPeriodInDays": 365,
+    "NextRotationDate": "2027-10-10T17:42:28.204000-05:00"
+}

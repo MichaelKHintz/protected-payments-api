@@ -1,0 +1,62 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "KeyAdministrationWithoutUse",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::<aws-account-id>:role/aws-reserved/sso.amazonaws.com/us-west-2/AWSReservedSSO_AdministratorAccess_3f848bc3e78c252b"
+      },
+      "Action": [
+        "kms:UpdateKeyDescription",
+        "kms:UpdateAlias",
+        "kms:UntagResource",
+        "kms:TagResource",
+        "kms:ScheduleKeyDeletion",
+        "kms:RotateKeyOnDemand",
+        "kms:RevokeGrant",
+        "kms:PutKeyPolicy",
+        "kms:ListResourceTags",
+        "kms:ListKeyRotations",
+        "kms:ListGrants",
+        "kms:GetKeyRotationStatus",
+        "kms:GetKeyPolicy",
+        "kms:EnableKeyRotation",
+        "kms:EnableKey",
+        "kms:DisableKeyRotation",
+        "kms:DisableKey",
+        "kms:DescribeKey",
+        "kms:DeleteAlias",
+        "kms:CreateAlias",
+        "kms:CancelKeyDeletion"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "TokenVaultEnvelopeEncryption",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::<aws-account-id>:user/workloads/payments-lab-token-vault"
+      },
+      "Action": [
+        "kms:GenerateDataKey",
+        "kms:Decrypt"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "kms:EncryptionContext:app": "token-vault"
+        },
+        "ForAllValues:StringEquals": {
+          "kms:EncryptionContextKeys": [
+            "app",
+            "token"
+          ]
+        },
+        "IpAddress": {
+          "aws:SourceIp": "<ip>/32"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+
+Verification for ghcr.io/michaelkhintz/protected-payments-api/token-vault@sha256:c3ea624fd5d9c9bd89bcf645cada57a608b44449319e99884552b09499619b7a --
+The following checks were performed on each of these signatures:
+  - The cosign claims were validated
+  - Existence of the claims in the transparency log was verified offline
+  - The code-signing certificate was verified using trusted certificate authority certificates
+
+[{"critical":{"identity":{"docker-reference":"ghcr.io/michaelkhintz/protected-payments-api/token-vault@sha256:c3ea624fd5d9c9bd89bcf645cada57a608b44449319e99884552b09499619b7a"},"image":{"docker-manifest-digest":"sha256:c3ea624fd5d9c9bd89bcf645cada57a608b44449319e99884552b09499619b7a"},"type":"https://sigstore.dev/cosign/sign/v1"},"optional":{}}]

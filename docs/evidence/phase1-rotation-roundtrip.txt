@@ -1,0 +1,13 @@
+token created: 2026-10-10T23:07:22Z (before rotation)
+{
+    "Rotations": [
+        {
+            "KeyId": "arn:aws:kms:us-east-1:<aws-account-id>:key/<uuid>",
+            "KeyMaterialId": "5a3a5eb8ba62fe3be398a41527cd49f36710620c360a19d4c1c6bdd4bd5daeb2",
+            "KeyMaterialState": "CURRENT",
+            "RotationDate": "2026-10-10T18:20:26.471000-05:00",
+            "RotationType": "ON_DEMAND"
+        }
+    ]
+}
+detokenize after rotation: {"pan":"4111111111111111"}

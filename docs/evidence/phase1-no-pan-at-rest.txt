@@ -1,0 +1,4 @@
+token-vault []
+payments-api []
+[('tok_XieLBV76RUx8ip8nTu_kTpV3', '1111', '2DEF95449A3EBC5B', 184)]
+PAN in payments-api logs: 0

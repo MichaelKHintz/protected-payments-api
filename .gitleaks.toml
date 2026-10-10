@@ -1,0 +1,11 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Lab evidence: vault tokens and KMS key material IDs are identifiers, not secrets"
+condition = "AND"
+paths = ['''docs/evidence/.*''']
+regexes = [
+  '''tok_[A-Za-z0-9_-]{20,}''',
+  '''[0-9a-f]{64}''',
+]

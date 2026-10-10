@@ -1,0 +1,2 @@
+
+aws: [ERROR]: An error occurred (AccessDeniedException) when calling the GenerateDataKey operation: User: arn:aws:iam::<aws-account-id>:user/workloads/payments-lab-token-vault is not authorized to perform: kms:GenerateDataKey on resource: arn:aws:kms:us-east-1:<aws-account-id>:key/<uuid> because no resource-based policy allows the kms:GenerateDataKey action
