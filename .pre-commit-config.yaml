@@ -1,0 +1,21 @@
+# Install once: brew install pre-commit && pre-commit install
+# Runs on every commit, including commits made from GitHub Desktop.
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: detect-private-key
+      - id: detect-aws-credentials
+        args: [--allow-missing-credentials]
+      - id: check-added-large-files
+  - repo: local
+    hooks:
+      - id: no-real-card-numbers
+        name: Block card numbers that aren't published test cards
+        entry: python3 scripts/check_no_real_pans.py
+        language: system
+        types: [text]

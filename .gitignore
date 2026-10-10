@@ -1,0 +1,44 @@
+# --- Secrets and environment-specific values: never commit ---
+.env
+.env.*
+!.env.example
+*.env
+!*.env.example
+!*.example
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.kubeconfig
+kubeconfig*
+secrets/
+
+# --- Terraform: state and variable files hold ARNs, IPs, and account IDs ---
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+*.tfplan
+
+# --- Raw test output: sanitize first, then save to docs/evidence/ ---
+evidence-raw/
+
+# --- Python and local data ---
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+*.db
+*.db-*
+
+# --- OS and editors ---
+.DS_Store
+.idea/
+.vscode/
+.windsurf/
+
+# --- Build-guide reference copies (Phase 1/2 versions); not part of the published repo ---
+phase-files/
