@@ -1,0 +1,11 @@
+Detect hardcoded secrets..................................................Passed
+detect private key........................................................Passed
+detect aws credentials....................................................Passed
+check for added large files...............................................Passed
+Block card numbers that aren't published test cards.......................Failed
+- hook id: no-real-card-numbers
+- exit code: 1
+
+scratch.txt:1: possible real card number 400000...0077
+Only published test card numbers may be committed. Remove the value or add a reviewed test number.
+
