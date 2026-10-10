@@ -1,0 +1,60 @@
+# Admission guardrails for the payments namespace (Kyverno 1.19, CEL-based v1 policy types).
+# Pod Security Admission ("restricted") already blocks privileged and root pods; these add supply-chain checks.
+
+# 1. Only images from this project's registry path may run in the namespace.
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: payments-restrict-registries
+spec:
+  validationActions: [Deny]
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: payments
+  validations:
+    - expression: >-
+        object.spec.containers.all(c, c.image.startsWith('ghcr.io/michaelkhintz/protected-payments-api/')) &&
+        (!has(object.spec.initContainers) ||
+          object.spec.initContainers.all(c, c.image.startsWith('ghcr.io/michaelkhintz/protected-payments-api/')))
+      message: Images in the payments namespace must come from ghcr.io/michaelkhintz/protected-payments-api.
+---
+# 2. Those images must carry a keyless cosign signature made by this repo's build workflow on main.
+apiVersion: policies.kyverno.io/v1
+kind: ImageValidatingPolicy
+metadata:
+  name: payments-require-signed-images
+spec:
+  validationActions: [Deny]
+  failurePolicy: Fail
+  webhookConfiguration:
+    timeoutSeconds: 15
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: payments
+  matchImageReferences:
+    - glob: "ghcr.io/michaelkhintz/protected-payments-api/*"
+  attestors:
+    - name: github
+      cosign:
+        keyless:
+          identities:
+            - issuer: https://token.actions.githubusercontent.com
+              subjectRegExp: '^https://github\.com/MichaelKHintz/protected-payments-api/\.github/workflows/build\.yml@refs/heads/main$'
+        ctlog:
+          url: https://rekor.sigstore.dev
+  validations:
+    - expression: >-
+        images.containers.map(image, verifyImageSignatures(image, [attestors.github])).all(e, e > 0)
+      message: Image must be signed by the protected-payments-api build workflow on main.
