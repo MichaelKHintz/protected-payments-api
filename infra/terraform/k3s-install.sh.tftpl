@@ -1,0 +1,27 @@
+#!/bin/bash
+# Runs once at first boot. Installs a pinned k3s with Secret encryption at rest and API audit logging.
+set -euo pipefail
+
+mkdir -p /etc/rancher/k3s /var/lib/rancher/k3s/server/logs
+
+# Record metadata (who, what, when) for every API request, without request or response bodies.
+cat > /var/lib/rancher/k3s/server/audit.yaml <<'EOF'
+apiVersion: audit.k8s.io/v1
+kind: Policy
+rules:
+  - level: Metadata
+EOF
+
+cat > /etc/rancher/k3s/config.yaml <<'EOF'
+write-kubeconfig-mode: "0600"
+secrets-encryption: true
+disable:
+  - traefik
+  - servicelb
+kube-apiserver-arg:
+  - "audit-log-path=/var/lib/rancher/k3s/server/logs/audit.log"
+  - "audit-policy-file=/var/lib/rancher/k3s/server/audit.yaml"
+  - "audit-log-maxage=30"
+EOF
+
+curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="${k3s_version}" sh -
