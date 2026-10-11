@@ -1,0 +1,19 @@
+{
+  "event": "llm_request",
+  "request_id": "<uuid>",
+  "client_id": "bSVoXHyuaZvSudwn6OQitbkZ6ZZgLQWq",
+  "payment_id": null,
+  "model": "claude-haiku-5-5",
+  "redactions": {
+    "cvv": 1,
+    "expiry": 1,
+    "card": 1,
+    "phone": 1,
+    "email": 1
+  },
+  "prompt_sha256": "aa84ba584c088373a8b1af8fb6dd34ff40389a3fc3cbbf6dc13833c212ca4851",
+  "redacted_prompt": "Customer Jane called from [PHONE], email [EMAIL]. Card [CARD tok_XieLBV76RUx8ip8nTu_kTpV3] [EXPIRY] [CVV] was charged twice for order-1001. She wants a refund.",
+  "outcome": "error",
+  "error_type": "AuthenticationError",
+  "latency_ms": 121
+}

@@ -1,0 +1,4 @@
+{"payment_id":"pay_558da57f576640e0b58b","stored_text":"Card [CARD tok_43FV--QWzswHnZppB6xJ3-Ru] declined twice","redactions":{"card":1}}
+{"detail":"LLM provider error"}
+wrong scope:
+{"detail":"insufficient scope"}
