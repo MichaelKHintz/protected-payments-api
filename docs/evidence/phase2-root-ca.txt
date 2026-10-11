@@ -1,0 +1,11 @@
+        Issuer: O=Payments Lab, CN=payments-lab-root-ca
+        Validity
+--
+            Not After : Oct 10 23:45:09 2027 GMT
+        Subject: O=Payments Lab, CN=payments-lab-root-ca
+        Subject Public Key Info:
+--
+            X509v3 Key Usage: critical
+                Digital Signature, Key Encipherment, Certificate Sign
+            X509v3 Basic Constraints: critical
+                CA:TRUE

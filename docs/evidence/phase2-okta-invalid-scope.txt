@@ -1,0 +1,4 @@
+{
+  "error": "access_denied",
+  "error_description": "Client has not been granted scopes: support:summarize"
+}

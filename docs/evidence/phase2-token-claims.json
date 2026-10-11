@@ -1,0 +1,10 @@
+{
+  "iss": "https://dev-gb1bgfai3o44mgr5.us.auth0.com/",
+  "sub": "TaSPen20DnwL1ga0nD7UJQRpfBf7zkcp@clients",
+  "aud": "api://payments-lab",
+  "iat": 1791680348,
+  "exp": 1791680648,
+  "scope": "payments:write payments:read",
+  "gty": "client-credentials",
+  "azp": "TaSPen20DnwL1ga0nD7UJQRpfBf7zkcp"
+}
