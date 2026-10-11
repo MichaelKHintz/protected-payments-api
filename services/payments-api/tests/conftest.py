@@ -14,6 +14,7 @@ from fastapi.testclient import TestClient
 
 from app.auth import TokenValidator
 from app.config import Settings
+from app.llm import Summary
 from app.main import create_app
 from app.vault_client import VaultClient
 
@@ -69,11 +70,27 @@ def fake_vault() -> VaultClient:
     return VaultClient("http://token-vault.test", transport=httpx.MockTransport(handler))
 
 
+class FakeSummarizer:
+    def __init__(self, reply="Customer reports a duplicate charge and wants a refund. Next step: verify and refund."):
+        self.reply = reply
+        self.prompts: list[str] = []
+
+    def summarize(self, redacted_notes: str) -> Summary:
+        self.prompts.append(redacted_notes)
+        return Summary(text=self.reply, model="claude-haiku-5-5", input_tokens=42, output_tokens=17,
+                       provider_request_id="req_test")
+
+
 @pytest.fixture
-def client(tmp_path):
+def summarizer():
+    return FakeSummarizer()
+
+
+@pytest.fixture
+def client(tmp_path, summarizer):
     settings = Settings(db_path=str(tmp_path / "payments.db"), oauth_issuer=ISSUER, oauth_audience=AUDIENCE)
     validator = TokenValidator(ISSUER, AUDIENCE, jwks_client=FakeJWKS())
-    app = create_app(settings, vault=fake_vault(), validator=validator)
+    app = create_app(settings, vault=fake_vault(), validator=validator, summarizer=summarizer)
     return TestClient(app)
 
 
