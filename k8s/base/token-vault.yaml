@@ -43,21 +43,27 @@ spec:
         - name: token-vault
           image: ghcr.io/michaelkhintz/protected-payments-api/token-vault@TOKEN_VAULT_DIGEST
           ports:
-            - { name: http, containerPort: 8080 }
+            - { name: https, containerPort: 8443 }
           env:
             - { name: AWS_REGION, value: us-east-1 }
             - { name: KMS_KEY_ID, value: alias/payments-lab-vault }
             - { name: HMAC_KEY_ID, value: alias/payments-lab-pan-hmac }
             - { name: DB_PATH, value: /data/vault.db }
-            - { name: PORT, value: "8080" }
-            # Phase 1 credential: the IAM user's access key, mounted as a file rather than env vars.
+            - { name: PORT, value: "8443" }
             - { name: AWS_SHARED_CREDENTIALS_FILE, value: /var/run/secrets/aws/credentials }
-            # Never fall back to the node's instance role (the IMDS hop limit blocks it too).
             - { name: AWS_EC2_METADATA_DISABLED, value: "true" }
+            # mTLS: our certificate, and the CA that client certificates must chain to
+            - { name: TLS_CERT_FILE, value: /var/run/tls/tls.crt }
+            - { name: TLS_KEY_FILE, value: /var/run/tls/tls.key }
+            - { name: TLS_CA_FILE, value: /var/run/tls/ca.crt }
+            # Authorization by certificate identity (URI SAN)
+            - { name: TOKENIZE_CALLERS, value: "spiffe://payments-lab/ns/payments/sa/payments-api" }
+            - { name: DETOKENIZE_CALLERS, value: "spiffe://payments-lab/ns/payments/sa/settlement-worker" }
           volumeMounts:
             - { name: data, mountPath: /data }
             - { name: tmp, mountPath: /tmp }
             - { name: aws-credentials, mountPath: /var/run/secrets/aws, readOnly: true }
+            - { name: tls, mountPath: /var/run/tls, readOnly: true }
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -66,10 +72,10 @@ spec:
             requests: { cpu: 50m, memory: 128Mi }
             limits: { cpu: 500m, memory: 256Mi }
           readinessProbe:
-            tcpSocket: { port: http }
+            tcpSocket: { port: https } # an HTTPS probe would fail: kubelet has no client certificate
             periodSeconds: 10
           livenessProbe:
-            tcpSocket: { port: http }
+            tcpSocket: { port: https }
             initialDelaySeconds: 10
             periodSeconds: 20
       volumes:
@@ -79,6 +85,8 @@ spec:
           emptyDir: { medium: Memory, sizeLimit: 16Mi }
         - name: aws-credentials
           secret: { secretName: token-vault-aws, defaultMode: 0440 }
+        - name: tls
+          secret: { secretName: token-vault-tls, defaultMode: 0440 }
 ---
 apiVersion: v1
 kind: Service
@@ -88,4 +96,4 @@ metadata:
 spec:
   selector: { app: token-vault }
   ports:
-    - { name: http, port: 8080, targetPort: http }
+    - { name: https, port: 8443, targetPort: https }

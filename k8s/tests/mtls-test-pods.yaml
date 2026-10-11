@@ -1,0 +1,108 @@
+# Pods and certificates used only to prove the Phase 2 failure cases. Delete them afterwards:
+#   kubectl delete -f k8s/tests/mtls-test-pods.yaml
+#
+# A second, unrelated CA ("rogue") that issues a certificate claiming to be payments-api.
+# The vault must reject it because it doesn't chain to the lab CA.
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: rogue-selfsigned
+  namespace: payments
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: rogue-ca
+  namespace: payments
+spec:
+  isCA: true
+  commonName: rogue-ca
+  secretName: rogue-ca
+  privateKey: { algorithm: ECDSA, size: 256 }
+  issuerRef: { name: rogue-selfsigned, kind: Issuer }
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: rogue-ca
+  namespace: payments
+spec:
+  ca:
+    secretName: rogue-ca
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: rogue-payments-api
+  namespace: payments
+spec:
+  secretName: rogue-payments-api
+  commonName: payments-api
+  uris: ["spiffe://payments-lab/ns/payments/sa/payments-api"]
+  usages: [digital signature, client auth]
+  privateKey: { algorithm: ECDSA, size: 256 }
+  issuerRef: { name: rogue-ca, kind: Issuer }
+---
+# Allowed through the NetworkPolicy, so it isolates the mTLS layer. Holds the settlement-worker
+# certificate (allowed to detokenize) and the rogue certificate.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mtls-tester
+  namespace: payments
+  labels: { app: mtls-tester }
+spec:
+  automountServiceAccountToken: false
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    fsGroup: 65532
+    seccompProfile: { type: RuntimeDefault }
+  containers:
+    - name: tester
+      image: ghcr.io/michaelkhintz/protected-payments-api/payments-api@PAYMENTS_API_DIGEST # signed image with Python
+      command: ["python3", "-c", "import time; time.sleep(86400)"]
+      resources:
+        requests: { cpu: 10m, memory: 32Mi }
+        limits: { cpu: 200m, memory: 128Mi }
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities: { drop: [ALL] }
+      volumeMounts:
+        - { name: settlement, mountPath: /var/run/settlement, readOnly: true }
+        - { name: rogue, mountPath: /var/run/rogue, readOnly: true }
+  volumes:
+    - name: settlement
+      secret: { secretName: settlement-worker-tls, defaultMode: 0440 }
+    - name: rogue
+      secret: { secretName: rogue-payments-api, defaultMode: 0440 }
+---
+# Not allowed by any NetworkPolicy: proves the network layer on its own.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: rogue-client
+  namespace: payments
+  labels: { app: rogue-client }
+spec:
+  automountServiceAccountToken: false
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    seccompProfile: { type: RuntimeDefault }
+  containers:
+    - name: client
+      image: ghcr.io/michaelkhintz/protected-payments-api/payments-api@PAYMENTS_API_DIGEST
+      command: ["python3", "-c", "import time; time.sleep(86400)"]
+      resources:
+        requests: { cpu: 10m, memory: 32Mi }
+        limits: { cpu: 200m, memory: 128Mi }
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities: { drop: [ALL] }

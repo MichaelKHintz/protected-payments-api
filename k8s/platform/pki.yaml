@@ -1,0 +1,37 @@
+# The lab's private certificate authority, run by cert-manager.
+# 1. A self-signed issuer exists only to sign the root once.
+# 2. The root CA certificate and key live in a Secret in the cert-manager namespace.
+# 3. A CA ClusterIssuer signs every workload certificate with that root.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-bootstrap
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: payments-lab-root-ca
+  namespace: cert-manager
+spec:
+  isCA: true
+  commonName: payments-lab-root-ca
+  subject:
+    organizations: [Payments Lab]
+  secretName: payments-lab-root-ca
+  duration: 8760h # 1 year
+  renewBefore: 720h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Never # a new root key would mean redistributing trust everywhere
+  issuerRef: { name: selfsigned-bootstrap, kind: ClusterIssuer, group: cert-manager.io }
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: payments-lab-ca
+spec:
+  ca:
+    secretName: payments-lab-root-ca

@@ -43,14 +43,28 @@ spec:
         - name: payments-api
           image: ghcr.io/michaelkhintz/protected-payments-api/payments-api@PAYMENTS_API_DIGEST
           ports:
-            - { name: http, containerPort: 8080 }
+            - { name: https, containerPort: 8443 }
+          # OAUTH_ISSUER and OAUTH_AUDIENCE come from a ConfigMap you create from a gitignored file.
+          envFrom:
+            - configMapRef: { name: payments-api-oauth }
           env:
             - { name: DB_PATH, value: /data/payments.db }
-            - { name: PORT, value: "8080" }
-            - { name: VAULT_URL, value: "http://token-vault.payments.svc:8080" }
+            - { name: PORT, value: "8443" }
+            - { name: TLS_CERT_FILE, value: /var/run/tls/tls.crt }
+            - { name: TLS_KEY_FILE, value: /var/run/tls/tls.key }
+            # The same certificate is this service's client identity when it calls the vault.
+            - { name: VAULT_URL, value: "https://token-vault.payments.svc:8443" }
+            - { name: VAULT_CA_FILE, value: /var/run/tls/ca.crt }
+            - { name: VAULT_CLIENT_CERT_FILE, value: /var/run/tls/tls.crt }
+            - { name: VAULT_CLIENT_KEY_FILE, value: /var/run/tls/tls.key }
+            # Phase 3: Claude API key (mounted as a file) and model
+            - { name: ANTHROPIC_API_KEY_FILE, value: /var/run/secrets/anthropic/api-key }
+            - { name: CLAUDE_MODEL, value: claude-haiku-5-5 }
           volumeMounts:
             - { name: data, mountPath: /data }
             - { name: tmp, mountPath: /tmp }
+            - { name: tls, mountPath: /var/run/tls, readOnly: true }
+            - { name: anthropic, mountPath: /var/run/secrets/anthropic, readOnly: true }
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -59,10 +73,10 @@ spec:
             requests: { cpu: 50m, memory: 128Mi }
             limits: { cpu: 500m, memory: 256Mi }
           readinessProbe:
-            tcpSocket: { port: http }
+            tcpSocket: { port: https }
             periodSeconds: 10
           livenessProbe:
-            tcpSocket: { port: http }
+            tcpSocket: { port: https }
             initialDelaySeconds: 10
             periodSeconds: 20
       volumes:
@@ -70,6 +84,10 @@ spec:
           persistentVolumeClaim: { claimName: payments-api-data }
         - name: tmp
           emptyDir: { medium: Memory, sizeLimit: 16Mi }
+        - name: tls
+          secret: { secretName: payments-api-tls, defaultMode: 0440 }
+        - name: anthropic
+          secret: { secretName: anthropic-api-key, defaultMode: 0440, optional: true } # created in Phase 3
 ---
 apiVersion: v1
 kind: Service
@@ -79,4 +97,4 @@ metadata:
 spec:
   selector: { app: payments-api }
   ports:
-    - { name: http, port: 8080, targetPort: http }
+    - { name: https, port: 8443, targetPort: https }

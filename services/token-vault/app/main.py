@@ -1,7 +1,7 @@
 """token-vault: swaps card numbers for random tokens and keeps the card numbers encrypted.
 
-Phase 1 version: plain HTTP inside the cluster; the NetworkPolicy is the only thing deciding
-who can call it. Phase 2 adds mTLS and per-caller authorization.
+Phase 2 version: every request arrives over mTLS, and each endpoint checks the caller's
+certificate identity (a SPIFFE-style URI SAN) against an allowlist.
 """
 import json
 import logging
@@ -43,6 +43,23 @@ def new_token() -> str:
     return "tok_" + secrets.token_urlsafe(18)
 
 
+def caller_identity(request: Request) -> str | None:
+    """Return the SPIFFE URI from the verified client certificate, if there is one."""
+    peer = request.scope.get("extensions", {}).get("tls", {}).get("peer_cert") or {}
+    for kind, value in peer.get("subjectAltName", ()):
+        if kind == "URI" and value.startswith("spiffe://"):
+            return value
+    return None
+
+
+def authorize(request: Request, allowed: frozenset[str], action: str) -> str:
+    caller = caller_identity(request)
+    if caller is None or caller not in allowed:
+        log.warning(json.dumps({"event": "authz_denied", "action": action, "caller": caller}))
+        raise HTTPException(status_code=403, detail="caller is not allowed to perform this action")
+    return caller
+
+
 def create_app(settings: Settings | None = None, kms_client=None) -> FastAPI:
     settings = settings or Settings.from_env()
     kms = kms_client or boto3.client("kms", region_name=settings.aws_region)
@@ -65,7 +82,8 @@ def create_app(settings: Settings | None = None, kms_client=None) -> FastAPI:
         return {"status": "ok"}
 
     @app.post("/v1/tokenize", status_code=201, response_model=TokenizeResponse)
-    def tokenize(body: TokenizeRequest, response: Response):
+    def tokenize(body: TokenizeRequest, request: Request, response: Response):
+        caller = authorize(request, settings.tokenize_callers, "tokenize")
         try:
             pan = cards.normalize(body.pan)
         except ValueError:
@@ -87,21 +105,21 @@ def create_app(settings: Settings | None = None, kms_client=None) -> FastAPI:
 
         if existing is not None:
             response.status_code = 200
-            log.info(json.dumps({"event": "tokenize", "token": existing.token, "duplicate": True}))
+            log.info(json.dumps({"event": "tokenize", "token": existing.token, "duplicate": True, "caller": caller}))
             return TokenizeResponse(token=existing.token, last4=existing.last4, brand=existing.brand, duplicate=True)
 
         record = store.get(token)
-        log.info(json.dumps({"event": "tokenize", "token": token, "duplicate": False}))
+        log.info(json.dumps({"event": "tokenize", "token": token, "duplicate": False, "caller": caller}))
         return TokenizeResponse(token=token, last4=record.last4, brand=record.brand, duplicate=False)
 
     @app.post("/v1/detokenize")
-    def detokenize(body: DetokenizeRequest):
-        # Phase 1 gap: anything that can reach the vault over the network can call this. Phase 2 closes it.
+    def detokenize(body: DetokenizeRequest, request: Request):
+        caller = authorize(request, settings.detokenize_callers, "detokenize")
         record = store.get(body.token)
         if record is None:
             raise HTTPException(status_code=404, detail="unknown token")
         pan = cipher.open(record.token, record.sealed)
-        log.info(json.dumps({"event": "detokenize", "token": record.token}))
+        log.info(json.dumps({"event": "detokenize", "token": record.token, "caller": caller}))
         return {"pan": pan}
 
     return app

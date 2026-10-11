@@ -42,3 +42,10 @@ __pycache__/
 
 # --- Build-guide reference copies (Phase 1/2 versions); not part of the published repo ---
 phase-files/
+
+scripts/run-labs.sh
+.env.okta
+k8s/config/payments-api-oauth.env
+ca.crt
+ca-root.crt
+*.tfplan

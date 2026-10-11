@@ -1,0 +1,50 @@
+# Workload certificates from the lab's private CA. Each one carries a SPIFFE-style URI SAN
+# that the vault uses as the caller's identity. Keys are ECDSA P-256 and regenerated on renewal.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: token-vault-tls
+  namespace: payments
+spec:
+  secretName: token-vault-tls
+  commonName: token-vault
+  dnsNames: [token-vault, token-vault.payments.svc, token-vault.payments.svc.cluster.local]
+  uris: ["spiffe://payments-lab/ns/payments/sa/token-vault"]
+  usages: [digital signature, server auth, client auth]
+  duration: 720h # 30 days
+  renewBefore: 240h
+  privateKey: { algorithm: ECDSA, size: 256, encoding: PKCS8, rotationPolicy: Always }
+  issuerRef: { name: payments-lab-ca, kind: ClusterIssuer, group: cert-manager.io }
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: payments-api-tls
+  namespace: payments
+spec:
+  secretName: payments-api-tls
+  commonName: payments-api
+  # "localhost" lets you call the API through kubectl port-forward and still verify the certificate.
+  dnsNames: [payments-api, payments-api.payments.svc, localhost]
+  uris: ["spiffe://payments-lab/ns/payments/sa/payments-api"]
+  usages: [digital signature, server auth, client auth]
+  duration: 720h
+  renewBefore: 240h
+  privateKey: { algorithm: ECDSA, size: 256, encoding: PKCS8, rotationPolicy: Always }
+  issuerRef: { name: payments-lab-ca, kind: ClusterIssuer, group: cert-manager.io }
+---
+# Identity for a settlement job that may detokenize. Used by the mtls-tester pod in this lab.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: settlement-worker-tls
+  namespace: payments
+spec:
+  secretName: settlement-worker-tls
+  commonName: settlement-worker
+  uris: ["spiffe://payments-lab/ns/payments/sa/settlement-worker"]
+  usages: [digital signature, client auth]
+  duration: 720h
+  renewBefore: 240h
+  privateKey: { algorithm: ECDSA, size: 256, encoding: PKCS8, rotationPolicy: Always }
+  issuerRef: { name: payments-lab-ca, kind: ClusterIssuer, group: cert-manager.io }
